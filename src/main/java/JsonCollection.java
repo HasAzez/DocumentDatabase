@@ -1,11 +1,11 @@
-import com.google.common.base.Stopwatch;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.codec.digest.DigestUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class JsonCollection {
     private final ConcurrentHashMap<String, JsonObject> uniqueIndexedMap;
@@ -64,9 +64,9 @@ public class JsonCollection {
         return uniqueIndexedMap.values();
     }
 
-    public Iterator<JsonObject> getCertainFromIndexed(String searched) throws NoSuchFieldException {
+    public ArrayList<JsonObject> getCertainFromIndexed(String searched) throws NoSuchFieldException {
         if (isPropertyIndexed) {
-            return propertyIndexedMap.get(searched).iterator();
+            return propertyIndexedMap.get(searched);
         } else {
             throw new NoSuchFieldException();
         }
