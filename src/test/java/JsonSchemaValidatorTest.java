@@ -28,8 +28,9 @@ class JsonSchemaValidatorTest {
         assertEquals(expectedOutput, validator.errorList(ahmad));
 
     }
+
     @Test
-    void messingOneField() throws JsonProcessingException {
+    void missingOneField() throws JsonProcessingException {
         String ahmad = "{\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":13}";
         String expectedOutput = "$.name: is missing but it is required";
         assertEquals(expectedOutput, validator.errorList(ahmad));
