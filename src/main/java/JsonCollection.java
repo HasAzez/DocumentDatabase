@@ -1,30 +1,33 @@
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.codec.digest.DigestUtils;
-
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 public class JsonCollection {
-    private final ConcurrentHashMap<String, JsonObject> uniqueIndexedMap;
-    private final ConcurrentHashMap<String, ArrayList<JsonObject>> propertyIndexedMap;
+    private final HashMap<String, JsonObject> uniqueIndexedMap;
+    private final HashMap<String, ArrayList<JsonObject>> propertyIndexedMap;
     private final String name;
-    private boolean isPropertyIndexed;
+    private boolean isPropertyIndexed = false;
     private String indexProperty;
     private int count;
 
 
-    public JsonCollection(String name) {
-        this.propertyIndexedMap = new ConcurrentHashMap<>();
-        this.uniqueIndexedMap = new ConcurrentHashMap<>();
+
+    public  JsonCollection(String name) {
+
+        this.propertyIndexedMap = new HashMap<>() ;
+        this.uniqueIndexedMap = new HashMap<>();
         this.name = name;
         count = 0;
     }
 
 
-    public void insert(String jsonSentence) {
+    public synchronized  void insert(String jsonSentence) {
+
+
+
 
         String wrapped = wrapID(jsonSentence);
         JsonParser jsonParser = new JsonParser();
@@ -34,6 +37,7 @@ public class JsonCollection {
             insertToPropertyMap(uniqueIndexedJson);
         count++;
 
+
     }
 
     private String wrapID(String jsonSentence) {
@@ -42,10 +46,10 @@ public class JsonCollection {
     }
 
 
-    public boolean deleteUsingID(String key) {
-        if (uniqueIndexedMap.isEmpty() || uniqueIndexedMap.get(key) == null)
+    public synchronized boolean deleteUsingID(String key) {
+        if (uniqueIndexedMap.isEmpty() || uniqueIndexedMap.get(key) == null) {
             return false;
-
+        }
         if (isPropertyIndexed) {
             String specificProperty = uniqueIndexedMap.get(key).get(indexProperty).getAsString();
 
@@ -56,21 +60,31 @@ public class JsonCollection {
 
 
         count--;
-
         return true;
     }
 
-    public Collection<JsonObject> getAll() {
-        return uniqueIndexedMap.values();
-    }
+    public   Collection<JsonObject> getAll() {
+        try {
+            Collection<JsonObject> values = uniqueIndexedMap.values();
 
-    public ArrayList<JsonObject> getCertainFromIndexed(String searched) throws NoSuchFieldException {
-        if (isPropertyIndexed) {
-            return propertyIndexedMap.get(searched);
-        } else {
-            throw new NoSuchFieldException();
+            return values;
+        } finally {
         }
 
+    }
+
+
+    public  ArrayList<JsonObject> getCertainFromIndexed(String searched) {
+        try {
+            if (isPropertyIndexed) {
+                ArrayList<JsonObject> jsonObjects = propertyIndexedMap.get(searched);
+
+                return jsonObjects;
+            } else {
+                return null;
+            }
+        } finally {
+        }
     }
 
     public void makeIndexed(String indexProperty) {
@@ -90,16 +104,23 @@ public class JsonCollection {
         return uniqueIndexedMap.isEmpty();
     }
 
-    private void insertToPropertyMap(JsonObject f) {
-        String index = f.get(indexProperty).getAsString();
-        boolean checkIfWereBefore = propertyIndexedMap.get(index) == null;
-        if (checkIfWereBefore) {
-            propertyIndexedMap.put(index, new ArrayList<>());
+    private synchronized void insertToPropertyMap(JsonObject f) {
+        try {
+            String index = f.get(indexProperty).getAsString();
+            boolean checkIfWereBefore = propertyIndexedMap.get(index) == null;
+            if (checkIfWereBefore) {
+                propertyIndexedMap.put(index, new ArrayList<>());
+            }
+            propertyIndexedMap.get(index).add(f);
+        } finally {
         }
-        propertyIndexedMap.get(index).add(f);
     }
 
     public void setIndexProperty(String indexProperty) {
         this.indexProperty = indexProperty;
+    }
+
+    public int getCount() {
+        return count;
     }
 }

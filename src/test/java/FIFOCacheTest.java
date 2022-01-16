@@ -3,7 +3,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public  class FIFOCacheTest {
-     FIFOCache<Integer,Integer> cache;
+    FIFOCache<Integer,Integer> cache;
     @BeforeEach
       void setup() {
          cache = new FIFOCache(3);
