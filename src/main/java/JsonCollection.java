@@ -1,38 +1,41 @@
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.commons.codec.digest.DigestUtils;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 
-public class JsonCollection {
-    private final HashMap<String, JsonObject> uniqueIndexedMap;
-    private final HashMap<String, ArrayList<JsonObject>> propertyIndexedMap;
+public class JsonCollection implements Serializable {
+
+    private final Map<String, JsonNode> uniqueIndexedMap;
+    private final Map<String, ArrayList<JsonNode>> propertyIndexedMap;
     private final String name;
     private boolean isPropertyIndexed = false;
     private String indexProperty;
     private int count;
+    private ObjectMapper mapper;
 
 
-
-    public  JsonCollection(String name) {
-
-        this.propertyIndexedMap = new HashMap<>() ;
+    public JsonCollection(String name) {
+        mapper = new ObjectMapper();
+        this.propertyIndexedMap = new HashMap<>();
         this.uniqueIndexedMap = new HashMap<>();
         this.name = name;
         count = 0;
     }
 
 
-    public synchronized  void insert(String jsonSentence) {
-
-
+    public synchronized void insert(String jsonSentence) throws JsonProcessingException {
 
 
         String wrapped = wrapID(jsonSentence);
-        JsonParser jsonParser = new JsonParser();
-        JsonObject uniqueIndexedJson = jsonParser.parse(wrapped).getAsJsonObject();
-        uniqueIndexedMap.put(DigestUtils.sha1Hex(count + ""), uniqueIndexedJson);
+        JsonNode uniqueIndexedJson = mapper.readTree(wrapped);
+        uniqueIndexedMap.putIfAbsent(DigestUtils.sha1Hex(count + ""), uniqueIndexedJson);
         if (isPropertyIndexed)
             insertToPropertyMap(uniqueIndexedJson);
         count++;
@@ -51,10 +54,10 @@ public class JsonCollection {
             return false;
         }
         if (isPropertyIndexed) {
-            String specificProperty = uniqueIndexedMap.get(key).get(indexProperty).getAsString();
+            String specificProperty = uniqueIndexedMap.get(key).get(indexProperty).asText();
 
-            ArrayList<JsonObject> wantedBucket = propertyIndexedMap.get(specificProperty);
-            wantedBucket.removeIf(jo -> jo.get("_id").getAsString().equals(key));
+            ArrayList<JsonNode> wantedBucket = propertyIndexedMap.get(specificProperty);
+            wantedBucket.removeIf(jo -> jo.get("_id").asText().equals(key));
         }
         uniqueIndexedMap.remove(key);
 
@@ -63,9 +66,9 @@ public class JsonCollection {
         return true;
     }
 
-    public   Collection<JsonObject> getAll() {
+    public Collection<JsonNode> getAll() {
         try {
-            Collection<JsonObject> values = uniqueIndexedMap.values();
+            Collection<JsonNode> values = uniqueIndexedMap.values();
 
             return values;
         } finally {
@@ -73,25 +76,33 @@ public class JsonCollection {
 
     }
 
+    public JsonNode getDocument(String id) {
+        return uniqueIndexedMap.get(id);
 
-    public  ArrayList<JsonObject> getCertainFromIndexed(String searched) {
-        try {
-            if (isPropertyIndexed) {
-                ArrayList<JsonObject> jsonObjects = propertyIndexedMap.get(searched);
+    }
 
-                return jsonObjects;
-            } else {
-                return null;
+
+    public ArrayList<JsonNode> getCertainFromIndexed(String searched) {
+    return propertyIndexedMap.get(searched);
+    }
+
+    public ArrayList<JsonNode> getCertain( String propertyName,String searched) {
+
+            ArrayList<JsonNode> jsonNodes = new ArrayList<>();
+        for (JsonNode js :
+                uniqueIndexedMap.values()) {
+            if (js.get(propertyName).asText().equals(searched)) {
+                jsonNodes.add(js);
             }
-        } finally {
         }
+        return jsonNodes;
     }
 
     public void makeIndexed(String indexProperty) {
         setIndexProperty(indexProperty);
         boolean haveValuesCondition = !isPropertyIndexed && !uniqueIndexedMap.isEmpty();
         if (haveValuesCondition) {
-            for (JsonObject f :
+            for (JsonNode f :
                     uniqueIndexedMap.values()) {
                 insertToPropertyMap(f);
             }
@@ -104,16 +115,12 @@ public class JsonCollection {
         return uniqueIndexedMap.isEmpty();
     }
 
-    private synchronized void insertToPropertyMap(JsonObject f) {
-        try {
-            String index = f.get(indexProperty).getAsString();
-            boolean checkIfWereBefore = propertyIndexedMap.get(index) == null;
-            if (checkIfWereBefore) {
-                propertyIndexedMap.put(index, new ArrayList<>());
-            }
-            propertyIndexedMap.get(index).add(f);
-        } finally {
-        }
+    private synchronized void insertToPropertyMap(JsonNode f) {
+
+        String index = f.get(indexProperty).asText();
+        propertyIndexedMap.putIfAbsent(index, new ArrayList<>());
+        propertyIndexedMap.get(index).add(f);
+
     }
 
     public void setIndexProperty(String indexProperty) {
@@ -122,5 +129,9 @@ public class JsonCollection {
 
     public int getCount() {
         return count;
+    }
+
+    public String getName() {
+        return name;
     }
 }
