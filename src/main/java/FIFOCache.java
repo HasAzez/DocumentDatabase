@@ -3,7 +3,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 
-public class FIFOCache <K, V> extends LinkedHashMap {
+public class FIFOCache <K, V> extends LinkedHashMap<K,V> implements Cache<K,V> {
 
     private final int maxSize;
 
@@ -15,6 +15,9 @@ public class FIFOCache <K, V> extends LinkedHashMap {
     protected boolean removeEldestEntry(Map.Entry eldest) {
         return this.size() > maxSize;
     }
+
+
+
 
 
 }
