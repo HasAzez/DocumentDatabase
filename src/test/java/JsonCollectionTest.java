@@ -42,22 +42,21 @@ class JsonCollectionTest {
 
     @Test
     public void testInsertWithIndexing() {
-        jsonCollection.makeIndexed("name");
-
+        jsonCollection.makeIndexOn("name",jsonCollection.getAll());
         String expectedOutput = "{\"_id\":\"b6589fc6ab0dc82cf12099d1c2d40ab994e8410c\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}\n" +
                 "{\"_id\":\"356a192b7913b04c54574d18c28d46e6395428ab\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
-        String actualOutput = jsonCollection.getCertainFromIndexed("Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
+        String actualOutput = jsonCollection.get("name","Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
         assertEquals(expectedOutput, actualOutput);
 
     }
-
+//
     @Test
     void testDeletionWithIndexing()  {
-        jsonCollection.makeIndexed("name");
+        jsonCollection.makeIndexOn("name",jsonCollection.getAll());
         jsonCollection.deleteUsingID("356a192b7913b04c54574d18c28d46e6395428ab");
 
         String expectedOutput = "{\"_id\":\"b6589fc6ab0dc82cf12099d1c2d40ab994e8410c\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
-        String actualOutput = jsonCollection.getCertainFromIndexed("Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
+        String actualOutput = jsonCollection.get("name","Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
         assertEquals(expectedOutput, actualOutput);
 
 
@@ -74,7 +73,7 @@ class JsonCollectionTest {
     void getDocumentsBasedOnPropertyWithoutIndex(){
         String expectedOutput = "{\"_id\":\"b6589fc6ab0dc82cf12099d1c2d40ab994e8410c\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}\n" +
                 "{\"_id\":\"356a192b7913b04c54574d18c28d46e6395428ab\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
-        String actualOutput = jsonCollection.getCertain("age","18").stream().map(Object::toString).collect(Collectors.joining("\n"));
+        String actualOutput = jsonCollection.get("age","18").stream().map(Object::toString).collect(Collectors.joining("\n"));
         assertEquals(expectedOutput, actualOutput);
     }
 

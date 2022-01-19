@@ -5,25 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-public class JsonCollection implements Serializable {
+public class JsonCollection extends IndexingFunctionality implements Serializable {
 
     private final Map<String, JsonNode> uniqueIndexedMap;
-    private final Map<String, ArrayList<JsonNode>> propertyIndexedMap;
     private final String name;
-    private boolean isPropertyIndexed = false;
-    private String indexProperty;
     private int count;
     private ObjectMapper mapper;
 
-
     public JsonCollection(String name) {
         mapper = new ObjectMapper();
-        this.propertyIndexedMap = new HashMap<>();
         this.uniqueIndexedMap = new HashMap<>();
         this.name = name;
         count = 0;
@@ -36,8 +28,8 @@ public class JsonCollection implements Serializable {
         String wrapped = wrapID(jsonSentence);
         JsonNode uniqueIndexedJson = mapper.readTree(wrapped);
         uniqueIndexedMap.putIfAbsent(DigestUtils.sha1Hex(count + ""), uniqueIndexedJson);
-        if (isPropertyIndexed)
-            insertToPropertyMap(uniqueIndexedJson);
+        if (!getIndexedProperties().isEmpty())
+            addToIndexedMap(uniqueIndexedJson);
         count++;
 
 
@@ -53,15 +45,8 @@ public class JsonCollection implements Serializable {
         if (uniqueIndexedMap.isEmpty() || uniqueIndexedMap.get(key) == null) {
             return false;
         }
-        if (isPropertyIndexed) {
-            String specificProperty = uniqueIndexedMap.get(key).get(indexProperty).asText();
-
-            ArrayList<JsonNode> wantedBucket = propertyIndexedMap.get(specificProperty);
-            wantedBucket.removeIf(jo -> jo.get("_id").asText().equals(key));
-        }
+        deleteFromIndexed(uniqueIndexedMap.get(key),key);
         uniqueIndexedMap.remove(key);
-
-
         count--;
         return true;
     }
@@ -82,50 +67,32 @@ public class JsonCollection implements Serializable {
     }
 
 
-    public ArrayList<JsonNode> getCertainFromIndexed(String searched) {
-    return propertyIndexedMap.get(searched);
+    public ArrayList<JsonNode> get(String propertyName, String searched) {
+        ArrayList<JsonNode> jsonNodes = new ArrayList<>();
+
+        if (getIndexedProperties().contains(propertyName)) {
+            jsonNodes = getIndex(propertyName).get(searched);
+        } else {
+            searchForNonIndexedValues(propertyName, searched, jsonNodes);
+        }
+
+        return jsonNodes;
     }
 
-    public ArrayList<JsonNode> getCertain( String propertyName,String searched) {
-
-            ArrayList<JsonNode> jsonNodes = new ArrayList<>();
+    private void searchForNonIndexedValues(String propertyName, String searched, ArrayList<JsonNode> jsonNodes) {
         for (JsonNode js :
                 uniqueIndexedMap.values()) {
             if (js.get(propertyName).asText().equals(searched)) {
                 jsonNodes.add(js);
             }
         }
-        return jsonNodes;
     }
 
-    public void makeIndexed(String indexProperty) {
-        setIndexProperty(indexProperty);
-        boolean haveValuesCondition = !isPropertyIndexed && !uniqueIndexedMap.isEmpty();
-        if (haveValuesCondition) {
-            for (JsonNode f :
-                    uniqueIndexedMap.values()) {
-                insertToPropertyMap(f);
-            }
-        }
-        isPropertyIndexed = true;
-
-    }
 
     public boolean isEmpty() {
         return uniqueIndexedMap.isEmpty();
     }
 
-    private synchronized void insertToPropertyMap(JsonNode f) {
-
-        String index = f.get(indexProperty).asText();
-        propertyIndexedMap.putIfAbsent(index, new ArrayList<>());
-        propertyIndexedMap.get(index).add(f);
-
-    }
-
-    public void setIndexProperty(String indexProperty) {
-        this.indexProperty = indexProperty;
-    }
 
     public int getCount() {
         return count;
@@ -134,4 +101,6 @@ public class JsonCollection implements Serializable {
     public String getName() {
         return name;
     }
+
+
 }
