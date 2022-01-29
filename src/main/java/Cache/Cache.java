@@ -1,3 +1,5 @@
+package Cache;
+
 public interface Cache<K,V> {
 
     V put(K key, V value);
