@@ -1,3 +1,4 @@
+import Indexing.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ class JsonCollectionTest {
 
     @Test
     void testDeletionWithoutIndexing() {
-        jsonCollection.deleteUsingID("356a192b7913b04c54574d18c28d46e6395428ab");
+        jsonCollection.delete("_id","356a192b7913b04c54574d18c28d46e6395428ab");
         String expectedOutput = "{\"_id\":\"b6589fc6ab0dc82cf12099d1c2d40ab994e8410c\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}\n" +
                 "{\"_id\":\"da4b9237bacccdf19c0760cab7aec4a8359010b0\",\"name\":\"Khaled\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":20}";
         String actualOutput = jsonCollection.getAll().stream().map(Object::toString).collect(Collectors.joining("\n"));
@@ -49,11 +50,11 @@ class JsonCollectionTest {
         assertEquals(expectedOutput, actualOutput);
 
     }
-//
+
     @Test
-    void testDeletionWithIndexing()  {
+    void testIDDeletionWithIndexing()  {
         jsonCollection.makeIndexOn("name",jsonCollection.getAll());
-        jsonCollection.deleteUsingID("356a192b7913b04c54574d18c28d46e6395428ab");
+        jsonCollection.delete("_id","356a192b7913b04c54574d18c28d46e6395428ab");
 
         String expectedOutput = "{\"_id\":\"b6589fc6ab0dc82cf12099d1c2d40ab994e8410c\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
         String actualOutput = jsonCollection.get("name","Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
@@ -62,12 +63,22 @@ class JsonCollectionTest {
 
     }
     @Test
+    void testDeletionWithIndexing()  {
+        jsonCollection.makeIndexOn("name",jsonCollection.getAll());
+        jsonCollection.delete("name","Hasan");
+
+       String expectedOutput = "{\"_id\":\"da4b9237bacccdf19c0760cab7aec4a8359010b0\",\"name\":\"Khaled\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":20}";
+       String actualOutput = jsonCollection.get("name","Khaled").stream().map(Object::toString).collect(Collectors.joining("\n"));
+       assertEquals(expectedOutput, actualOutput);
+
+
+    }
+    @Test
     void  getDocument(){
         String id = "b6589fc6ab0dc82cf12099d1c2d40ab994e8410c";
         String expectedOutput = "{\"_id\":\"b6589fc6ab0dc82cf12099d1c2d40ab994e8410c\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
-        String actualOutput = jsonCollection.getDocument(id).toString();
+        String actualOutput = jsonCollection.get("_id",id).get(0).toString();
         assertEquals(expectedOutput,actualOutput);
-
     }
     @Test
     void getDocumentsBasedOnPropertyWithoutIndex(){
