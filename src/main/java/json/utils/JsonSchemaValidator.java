@@ -1,3 +1,5 @@
+package json.utils;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,10 +15,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class JsonSchemaValidator {
-    JsonSchemaFactory factory;
-    InputStream inputStream;
-    JsonSchema schemaReader;
-    ObjectMapper jsonMapper;
+    private final JsonSchemaFactory factory;
+    private final InputStream inputStream;
+    private final JsonSchema schemaReader;
+    private final ObjectMapper jsonMapper;
 
     public JsonSchemaValidator(SpecVersion.VersionFlag version, String fileName) {
         this.factory = JsonSchemaFactory.getInstance(version);

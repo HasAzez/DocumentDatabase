@@ -1,9 +1,11 @@
+package Cache;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 
-public class FIFOCache <K, V> extends LinkedHashMap<K,V> implements Cache<K,V> {
+public class FIFOCache <K, V> extends LinkedHashMap<K,V> implements Cache<K,V>, Serializable {
 
     private final int maxSize;
 

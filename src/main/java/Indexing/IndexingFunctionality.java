@@ -1,3 +1,5 @@
+package Indexing;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.*;
@@ -10,7 +12,7 @@ public class IndexingFunctionality {
     }
 
 
-    protected void makeIndexOn(String property, Collection<JsonNode> values) {
+    public void makeIndexOn(String property, Collection<JsonNode> values) {
         if (!indexes.containsKey(property)) {
             makeIndexTable(property);
         } else if (values.isEmpty()) {
@@ -56,6 +58,9 @@ public class IndexingFunctionality {
             ArrayList<JsonNode> wantedBucket = getIndex(property).get(specificProperty);
             wantedBucket.removeIf(jo -> jo.get("_id").asText().equals(key));
         }
+    }
+    protected void deleteFromIndexed(String property,String key) {
+        getIndex(property).remove(key);
     }
 
     protected Set<String> getIndexedProperties() {
