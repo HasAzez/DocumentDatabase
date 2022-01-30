@@ -7,26 +7,32 @@ import json.utils.SaveManager;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+
 
 public enum DatabaseFacade {
     INSTANCE;
-    private final CollectionManager collectionManager;
+    private CollectionManager collectionManager;
     private final Cache<String, ArrayList<JsonNode>> cache;
-    private final Map<String, JsonSchemaValidator> validators;
 
     DatabaseFacade() {
         cache = new FIFOCache<String, ArrayList<JsonNode>>(100);
-        collectionManager = CollectionManager.newInstance(new ArrayList<>());
-        validators = new HashMap<>();
+        try {
+            collectionManager = handle();
+        } catch (IOException |ClassNotFoundException e){
+            throw new RuntimeException(e);
+        }
     }
-
     public void createCollection(String collectionName, String jsonSchema) throws IOException {
-        JsonCollection jsonCollection = new JsonCollection(collectionName);
+        JsonCollection jsonCollection = new JsonCollection(collectionName, jsonSchema);
         collectionManager.addCollection(jsonCollection);
-        validators.put(collectionName, new JsonSchemaValidator(jsonSchema));
         commit();
+    }
+    public CollectionManager handle() throws IOException, ClassNotFoundException {
+        File f= new File("database.db");
+        if (f.exists()){
+            return SaveManager.load(f);
+        }
+        else return  CollectionManager.newInstance(new ArrayList<>());
     }
 
     public void deleteCollection(String collectionName) throws IOException {
@@ -66,14 +72,15 @@ public enum DatabaseFacade {
     }
 
     public void add(String collectionName, String jsonString) throws IOException {
-        JsonSchemaValidator validator = validators.get(collectionName);
-        if (validator.isValid(jsonString)) {
-            collectionManager.selectCollection(collectionName);
-            JsonCollection jsonCollection = collectionManager.getCurrentCollection();
+        collectionManager.selectCollection(collectionName);
+        JsonCollection jsonCollection = collectionManager.getCurrentCollection();
+       JsonSchemaValidator validator = jsonCollection.getValidator();
+       if (validator.isValid(jsonString)) {
+
             jsonCollection.insert(jsonString);
-        } else {
+      } else {
             System.out.println(validator.errorList(jsonString));
-        }
+       }
         commit();
 
     }
@@ -90,7 +97,7 @@ public enum DatabaseFacade {
     }
 
     private void commit() throws IOException {
-        SaveManager.save(INSTANCE, "database.db");
+        SaveManager.save(collectionManager, "database.db");
     }
 
     public void makeIndexOn(String collectionName, String propertyName) {
