@@ -4,7 +4,7 @@ import json.utils.SaveManager;
 import java.io.*;
 import java.util.List;
 
-public class CollectionManager {
+public class CollectionManager implements Serializable {
 
     private final List<JsonCollection> jsonCollections;
     private JsonCollection currentCollection;
@@ -44,7 +44,8 @@ public class CollectionManager {
     public void importCollection(File location) throws IOException, ClassNotFoundException {
         jsonCollections.add(SaveManager.load(location));
     }
-    public static CollectionManager newInstance(List<JsonCollection> list){
+
+    public static CollectionManager newInstance(List<JsonCollection> list) {
         return new CollectionManager(list);
     }
 

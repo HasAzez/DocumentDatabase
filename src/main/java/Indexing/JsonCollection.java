@@ -3,57 +3,52 @@ package Indexing;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import json.utils.JsonSchemaValidator;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.Serializable;
-import java.util.*;
-
-import static java.util.stream.Collectors.toCollection;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JsonCollection extends IndexingFunctionality implements Serializable {
 
     private final Map<String, JsonNode> uniqueIndexedMap;
     private final String name;
-    private int count;
+    private int num;
     private final ObjectMapper mapper;
+    private final  String validator;
 
-    public JsonCollection(String name) {
+    public JsonCollection(String name, String schemaFileLocation) {
+        this.validator = schemaFileLocation;
         mapper = new ObjectMapper();
         this.uniqueIndexedMap = new HashMap<>();
         this.name = name;
-        count = 0;
+        num = 0;
     }
 
 
-    public synchronized void insert(String jsonSentence) throws JsonProcessingException {
-
+    public void insert(String jsonSentence) throws JsonProcessingException {
 
         String wrapped = wrapID(jsonSentence);
         JsonNode uniqueIndexedJson = mapper.readTree(wrapped);
-        uniqueIndexedMap.putIfAbsent(DigestUtils.sha1Hex(count + ""), uniqueIndexedJson);
+        uniqueIndexedMap.putIfAbsent(DigestUtils.sha1Hex(num + ""), uniqueIndexedJson);
         if (!getIndexedProperties().isEmpty())
             addToIndexedMap(uniqueIndexedJson);
-        count++;
+        num++;
 
 
     }
 
-    private String wrapID(String jsonSentence) {
-        String hashedIndex = DigestUtils.sha1Hex(count + "");
-        return "{\"_id\":\"" + hashedIndex + "\"," + jsonSentence.substring(1);
-    }
-
-
-    public synchronized boolean delete(String propertyName, String key) {
+    public boolean delete(String propertyName, String key) {
 
         if (propertyName.equals("_id")) {
             deleteFromIndexed(uniqueIndexedMap.get(key), key);
             uniqueIndexedMap.remove(key);
-            count--;
         } else if (getIndexedProperties().contains(propertyName)) {
             deleteFromNonIndexed(propertyName, key);
-            deleteFromIndexed(propertyName,key);
+            deleteFromIndexed(propertyName, key);
         } else {
             deleteFromNonIndexed(propertyName, key);
         }
@@ -101,18 +96,18 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
     }
 
 
-    public boolean isEmpty() {
-        return uniqueIndexedMap.isEmpty();
+    private String wrapID(String jsonSentence) {
+        String hashedIndex = DigestUtils.sha1Hex(num + "");
+        return "{\"_id\":\"" + hashedIndex + "\"," + jsonSentence.substring(1);
     }
 
-
-    public int getCount() {
-        return count;
-    }
 
     public String getName() {
         return name;
     }
 
+    public JsonSchemaValidator getValidator()  {
+        return new JsonSchemaValidator(validator);
+    }
 
 }
