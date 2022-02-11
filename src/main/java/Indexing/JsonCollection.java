@@ -14,7 +14,6 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
 
     private final Map<String, JsonNode> uniqueIndexedMap;
     private final String name;
-    private int num;
     private final ObjectMapper mapper;
     private final String validator;
 
@@ -23,21 +22,25 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
         mapper = new ObjectMapper();
         this.uniqueIndexedMap = new HashMap<>();
         this.name = name;
-        num = 0;
     }
 
 
     public void insert(String jsonSentence) throws JsonProcessingException {
-
-        String wrapped = wrapID(jsonSentence);
-        JsonNode uniqueIndexedJson = mapper.readTree(wrapped);
-        uniqueIndexedMap.putIfAbsent(DigestUtils.sha1Hex(num + ""), uniqueIndexedJson);
-        if (!getIndexedProperties().isEmpty())
-            addToAllIndexes(uniqueIndexedJson);
-        num++;
-
-
+        JsonNode unWrappedJson = mapper.readTree(jsonSentence);
+        if (!uniqueIndexedMap.containsKey(unWrappedJson.hashCode()+"")) {
+            String wrapped = wrapID(jsonSentence);
+            JsonNode uniqueIndexedJson = mapper.readTree(wrapped);
+            uniqueIndexedMap.putIfAbsent(DigestUtils.sha1Hex(unWrappedJson.hashCode() + ""), uniqueIndexedJson);
+            if (!getIndexedProperties().isEmpty())
+                addToAllIndexes(uniqueIndexedJson);
+        }
     }
+    private String wrapID(String jsonSentence) throws JsonProcessingException {
+        JsonNode jsonNode = mapper.readTree(jsonSentence);
+        String hashedIndex = DigestUtils.sha1Hex(jsonNode.hashCode() + "");
+        return "{\"_id\":\"" + hashedIndex + "\"," + jsonSentence.substring(1);
+    }
+
 
     public void delete(String propertyName, String key) {
 
@@ -64,10 +67,12 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
         return new ArrayList<>(values);
 
     }
+
     private JsonNode getDocument(String id) {
         return uniqueIndexedMap.get(id);
 
     }
+
     public ArrayList<JsonNode> get(String propertyName, String searched) {
         ArrayList<JsonNode> jsonNodes = new ArrayList<>();
         if (propertyName.equals("_id")) {
@@ -92,10 +97,6 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
     }
 
 
-    private String wrapID(String jsonSentence) {
-        String hashedIndex = DigestUtils.sha1Hex(num + "");
-        return "{\"_id\":\"" + hashedIndex + "\"," + jsonSentence.substring(1);
-    }
 
 
     public String getName() {

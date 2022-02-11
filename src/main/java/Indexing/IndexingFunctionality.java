@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.*;
 
 public class IndexingFunctionality {
-    protected Map<String, Map<String, ArrayList<JsonNode>>> indexes;
+    private Map<String, Map<String, ArrayList<JsonNode>>> indexes;
 
     public IndexingFunctionality() {
         indexes = new HashMap<>();
@@ -13,19 +13,14 @@ public class IndexingFunctionality {
 
 
     public void makeIndexOn(String property, Collection<JsonNode> values) {
-        if (!indexes.containsKey(property)) {
-            makeIndexTable(property);
-        } else if (values.isEmpty()) {
-            return;
-        }
-
+            indexes.putIfAbsent(property, new HashMap<>());
         for (JsonNode jsonNode :
                 values) {
             addToIndexedMap(property, jsonNode);
-
         }
 
     }
+
 
     protected void addToIndexedMap(String property, JsonNode jsonNode) {
         String value = jsonNode.get(property).asText();
@@ -34,21 +29,14 @@ public class IndexingFunctionality {
 
     }
 
-    protected void addToIndexedMap(JsonNode jsonNode) {
+    protected void addToAllIndexes(JsonNode jsonNode) {
         for (String property :
                 getIndexedProperties()) {
             addToIndexedMap(property, jsonNode);
         }
     }
 
-    private void makeIndexTable(String property) {
-        if (!indexes.containsKey(property)) {
-            indexes.putIfAbsent(property, new HashMap<>());
-        } else {
-            System.out.println("it is already indexed");
-        }
 
-    }
 
     protected void deleteFromIndexed(JsonNode specificDocument, String key) {
 
@@ -60,7 +48,12 @@ public class IndexingFunctionality {
         }
     }
     protected void deleteFromIndexed(String property,String key) {
-        getIndex(property).remove(key);
+        ArrayList<JsonNode> jsonNodes = getIndex(property).get(key);
+        ArrayList<JsonNode> temp = new ArrayList<>(jsonNodes);
+        for (JsonNode jsonNode :
+                temp) {
+            deleteFromIndexed(jsonNode,jsonNode.get("_id").asText());
+        }
     }
 
     protected Set<String> getIndexedProperties() {
