@@ -6,11 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import json.utils.JsonSchemaValidator;
 import org.apache.commons.codec.digest.DigestUtils;
 
+import java.io.FileNotFoundException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class JsonCollection extends IndexingFunctionality implements Serializable {
 
@@ -18,7 +16,7 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
     private final String name;
     private int num;
     private final ObjectMapper mapper;
-    private final  String validator;
+    private final String validator;
 
     public JsonCollection(String name, String schemaFileLocation) {
         this.validator = schemaFileLocation;
@@ -35,13 +33,13 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
         JsonNode uniqueIndexedJson = mapper.readTree(wrapped);
         uniqueIndexedMap.putIfAbsent(DigestUtils.sha1Hex(num + ""), uniqueIndexedJson);
         if (!getIndexedProperties().isEmpty())
-            addToIndexedMap(uniqueIndexedJson);
+            addToAllIndexes(uniqueIndexedJson);
         num++;
 
 
     }
 
-    public boolean delete(String propertyName, String key) {
+    public void delete(String propertyName, String key) {
 
         if (propertyName.equals("_id")) {
             deleteFromIndexed(uniqueIndexedMap.get(key), key);
@@ -52,7 +50,7 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
         } else {
             deleteFromNonIndexed(propertyName, key);
         }
-        return true;
+
     }
 
     private void deleteFromNonIndexed(String propertyName, String key) {
@@ -66,13 +64,10 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
         return new ArrayList<>(values);
 
     }
-
     private JsonNode getDocument(String id) {
         return uniqueIndexedMap.get(id);
 
     }
-
-
     public ArrayList<JsonNode> get(String propertyName, String searched) {
         ArrayList<JsonNode> jsonNodes = new ArrayList<>();
         if (propertyName.equals("_id")) {
@@ -85,6 +80,7 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
 
         return jsonNodes;
     }
+
 
     private void searchForNonIndexedValues(String propertyName, String searched, ArrayList<JsonNode> jsonNodes) {
         for (JsonNode js :
@@ -106,7 +102,7 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
         return name;
     }
 
-    public JsonSchemaValidator getValidator()  {
+    public JsonSchemaValidator getValidator() throws FileNotFoundException {
         return new JsonSchemaValidator(validator);
     }
 
