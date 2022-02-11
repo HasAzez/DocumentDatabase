@@ -68,6 +68,22 @@ public class JsonCollection extends IndexingFunctionality implements Serializabl
 
     }
 
+    public void update(String id,String jsonSentence) throws JsonProcessingException {
+        JsonNode oldJson = getDocument(id);
+        if (uniqueIndexedMap.containsKey(id)) {
+            String wrapped = wrapIDWithDesiredID(jsonSentence, id);
+            JsonNode uniqueIndexedJson = mapper.readTree(wrapped);
+            uniqueIndexedMap.put(id, uniqueIndexedJson);
+            if (!getIndexedProperties().isEmpty()){
+                deleteFromIndexed(oldJson,id);
+                addToAllIndexes(uniqueIndexedJson);}
+        }
+    }
+    private String wrapIDWithDesiredID(String jsonSentence, String id)  {
+        return "{\"_id\":\"" + id + "\"," + jsonSentence.substring(1);
+    }
+
+
     private JsonNode getDocument(String id) {
         return uniqueIndexedMap.get(id);
 

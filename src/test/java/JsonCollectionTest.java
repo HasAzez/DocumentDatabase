@@ -22,9 +22,18 @@ class JsonCollectionTest {
     @Test
     public void testDuplicate() throws JsonProcessingException {
         jsonCollection.insert("{\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}");
-jsonCollection.getAll().stream().forEach(s->System.out.println(s.toPrettyString()));
+
+        String expectedOutput = "{\"_id\":\"0c0fec5e4e216ff035579a8380e68f536a2072c8\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}\n" +
+                "{\"_id\":\"fb7dda0435f69d23114a65918acab74d4743561a\",\"name\":\"Khaled\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":20}\n" +
+                "{\"_id\":\"f2852330b63dc24286a754d2a91cee1199c2928c\",\"name\":\"Mahmoud\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
+        String actualOutput = jsonCollection.getAll().stream().map(Object::toString).collect(Collectors.joining("\n"));
+
+
+        assertEquals(expectedOutput, actualOutput);
 
     }
+
+
 
     @Test
     public void testInsertWithoutIndexing() {
@@ -97,6 +106,16 @@ jsonCollection.getAll().stream().forEach(s->System.out.println(s.toPrettyString(
         String actualOutput = jsonCollection.get("age", "18").stream().map(Object::toString).collect(Collectors.joining("\n"));
         assertEquals(expectedOutput, actualOutput);
     }
+    @Test
+    public void testUpdate() throws JsonProcessingException {
+        jsonCollection.makeIndexOn("name",jsonCollection.getAll());
+        jsonCollection.update("0c0fec5e4e216ff035579a8380e68f536a2072c8","{\"name\":\"Jonas\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}");
+        String expectedOutput = "{\"_id\":\"0c0fec5e4e216ff035579a8380e68f536a2072c8\",\"name\":\"Jonas\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
+        String actualOutput = jsonCollection.get("name","Jonas").stream().map(Object::toString).collect(Collectors.joining("\n"));
 
+
+        assertEquals(expectedOutput, actualOutput);
+
+    }
 
 }
