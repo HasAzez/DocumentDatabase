@@ -3,6 +3,8 @@ import json.utils.JsonSchemaValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.FileNotFoundException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonSchemaValidatorTest {
@@ -10,7 +12,7 @@ class JsonSchemaValidatorTest {
 
 
     @BeforeEach
-    void setup() {
+    void setup() throws FileNotFoundException {
         validator = new JsonSchemaValidator("Example.json");
     }
 

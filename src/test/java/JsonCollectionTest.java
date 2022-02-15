@@ -1,14 +1,20 @@
-import Indexing.*;
+import index.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonCollectionTest {
-    JsonCollection jsonCollection = new JsonCollection("TEST", "Example.json");
+    IndexBuilder indexBuilder = new IndexBuilder.Builder(new ArrayList<>())
+            .indexType(new HashMap<>())
+            .indexesSelector(new HashMap<>())
+            .build();
+    JsonCollection jsonCollection = new JsonCollection("TEST", "Example.json",indexBuilder);
 
     @BeforeEach
     public void setup() throws JsonProcessingException {
@@ -60,8 +66,8 @@ class JsonCollectionTest {
 
     @Test
     public void testInsertWithIndexing() {
-        jsonCollection.makeIndexOn("name", jsonCollection.getAll());
-        jsonCollection.makeIndexOn("age", jsonCollection.getAll());
+        jsonCollection.makeIndexOn("name");
+        jsonCollection.makeIndexOn("age");
         String expectedOutput = "{\"_id\":\"0c0fec5e4e216ff035579a8380e68f536a2072c8\",\"name\":\"Hasan\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
         String actualOutput = jsonCollection.get("name", "Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
         assertEquals(expectedOutput, actualOutput);
@@ -71,7 +77,7 @@ class JsonCollectionTest {
 
     @Test
     public void testIDDeletionWithIndexing() {
-        jsonCollection.makeIndexOn("name", jsonCollection.getAll());
+        jsonCollection.makeIndexOn("name");
         jsonCollection.delete("_id", "0c0fec5e4e216ff035579a8380e68f536a2072c8");
 
         String actualOutput = jsonCollection.get("name", "Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
@@ -82,8 +88,8 @@ class JsonCollectionTest {
 
     @Test
     public void testDeletionWithIndexing() {
-        jsonCollection.makeIndexOn("name", jsonCollection.getAll());
-        jsonCollection.makeIndexOn("age", jsonCollection.getAll());
+        jsonCollection.makeIndexOn("name");
+        jsonCollection.makeIndexOn("age");
         jsonCollection.delete("name", "Hasan");
 
         String actualOutput = jsonCollection.get("name", "Hasan").stream().map(Object::toString).collect(Collectors.joining("\n"));
@@ -108,7 +114,7 @@ class JsonCollectionTest {
     }
     @Test
     public void testUpdate() throws JsonProcessingException {
-        jsonCollection.makeIndexOn("name",jsonCollection.getAll());
+        jsonCollection.makeIndexOn("name");
         jsonCollection.update("0c0fec5e4e216ff035579a8380e68f536a2072c8","{\"name\":\"Jonas\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}");
         String expectedOutput = "{\"_id\":\"0c0fec5e4e216ff035579a8380e68f536a2072c8\",\"name\":\"Jonas\",\"messages\":[\"msg 1\",\"msg 2\",\"msg 3\"],\"age\":18}";
         String actualOutput = jsonCollection.get("name","Jonas").stream().map(Object::toString).collect(Collectors.joining("\n"));
