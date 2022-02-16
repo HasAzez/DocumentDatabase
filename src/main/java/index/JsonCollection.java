@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class JsonCollection implements Serializable {
+public class JsonCollection implements Serializable, DatabaseSchema {
 
   private final Map<String, JsonNode> uniqueIndexedMap;
   private final String name;
@@ -23,14 +23,16 @@ public class JsonCollection implements Serializable {
   private final Lock readLock=reentrantReadWriteLock.readLock();
   private final Lock writeLock=reentrantReadWriteLock.writeLock();
 
-  public JsonCollection(String name, String schemaFileLocation, IndexBuilder indexBuilder) {
+  public JsonCollection(String name, String schemaFileLocation, IndexBuilder indexBuilder){
+
     this.validator = schemaFileLocation;
-    this.indexBuilder = indexBuilder;
     mapper = new ObjectMapper();
     this.uniqueIndexedMap = new HashMap<>();
     this.name = name;
+    this.indexBuilder= indexBuilder;
   }
 
+  @Override
   public void insert(String jsonSentence) throws JsonProcessingException {
     writeLock.lock();
     try {
@@ -54,10 +56,10 @@ public class JsonCollection implements Serializable {
     return "{\"_id\":\"" + hashedIndex + "\"," + jsonSentence.substring(1);
   }
 
+  @Override
   public void delete(String propertyName, String key) {
     writeLock.lock();
     try {
-
       if (propertyName.equals("_id")) {
         indexBuilder.deleteFromIndexed(uniqueIndexedMap.get(key), key);
         uniqueIndexedMap.remove(key);
@@ -77,6 +79,7 @@ public class JsonCollection implements Serializable {
     uniqueIndexedMap.entrySet().removeIf(e -> e.getValue().get(propertyName).asText().equals(key));
   }
 
+  @Override
   public List<JsonNode> getAll() {
     readLock.lock();
     try {
@@ -87,6 +90,7 @@ public class JsonCollection implements Serializable {
     }
   }
 
+  @Override
   public void update(String id, String jsonSentence) throws JsonProcessingException {
     writeLock.lock();
     try {
@@ -111,6 +115,7 @@ public class JsonCollection implements Serializable {
 
 
 
+  @Override
   public List<JsonNode> get(String propertyName, String searched) {
     readLock.lock();
     try {
@@ -140,6 +145,7 @@ public class JsonCollection implements Serializable {
     }
   }
 
+  @Override
   public void makeIndexOn(String propertyName) {
     writeLock.lock();
     try {
@@ -149,14 +155,17 @@ public class JsonCollection implements Serializable {
     }
   }
 
+  @Override
   public String getName() {
     return name;
   }
 
+  @Override
   public JsonSchemaValidator getValidator() throws FileNotFoundException {
     return new JsonSchemaValidator(validator);
   }
   public int getSize() {
     return uniqueIndexedMap.size();
   }
+
 }

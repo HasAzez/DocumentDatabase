@@ -9,11 +9,10 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public enum CollectionManager {
+public enum CollectionManager implements SchemaManager {
     INSTANCE();
 
-    private final List<JsonCollection> jsonCollections;
-    private JsonCollection currentCollection;
+    private  List<DatabaseSchema> jsonCollections;
     private final ReentrantReadWriteLock reentrantReadWriteLock=new ReentrantReadWriteLock();
     private final Lock readLock=reentrantReadWriteLock.readLock();
     private final Lock writeLock=reentrantReadWriteLock.writeLock();
@@ -22,7 +21,7 @@ public enum CollectionManager {
         this.jsonCollections = handle() ;
     }
 
-    public  ArrayList<JsonCollection> handle()  {
+    public  ArrayList<DatabaseSchema> handle()  {
         try {
             File f = new File("database.db");
             if (f.exists()) {
@@ -34,35 +33,34 @@ public enum CollectionManager {
     }
 
 
+    @Override
     public void deleteCollection(String name) {
     writeLock.lock();
     try {
-      if (currentCollection.getName().equals(name)) currentCollection = null;
+        if (jsonCollections.contains(selectCollection(name))) {
       jsonCollections.removeIf(j -> j.getName().equals(name));
-    } finally {
+    }} finally {
       writeLock.unlock();
     }
     }
 
-    public JsonCollection selectCollection(String name) {
-    writeLock.lock();
+    @Override
+    public DatabaseSchema selectCollection(String name) {
+    readLock.lock();
     try {
-      boolean isExist = false;
-      for (JsonCollection collection : jsonCollections) {
+      for (DatabaseSchema collection : jsonCollections) {
         if (collection.getName().equals(name)) {
-          currentCollection = collection;
-          isExist = true;
+            return collection;
         }
       }
-      if (!isExist) currentCollection = null;
-
-      return currentCollection;
+      return null;
     } finally {
-      writeLock.unlock();
+      readLock.unlock();
     }
     }
 
-    public boolean addCollection(JsonCollection collection) {
+    @Override
+    public boolean addCollection(DatabaseSchema collection) {
     writeLock.lock();
     try {
       if (jsonCollections.contains(collection)) return false;
@@ -72,11 +70,12 @@ public enum CollectionManager {
     }
     }
 
+    @Override
     public ArrayList<String> showCollectionNames() {
     readLock.lock();
     try {
       ArrayList<String> names = new ArrayList<>();
-      for (JsonCollection coll : jsonCollections) {
+      for (DatabaseSchema coll : jsonCollections) {
         names.add(coll.getName());
       }
       return names;
@@ -85,14 +84,16 @@ public enum CollectionManager {
     }
     }
 
-    public void dumpCollection() throws IOException {
+    @Override
+    public void dumpCollection(String collectionName) throws IOException {
     writeLock.lock();
     try {
-      SaveManager.save(currentCollection, currentCollection.getName() + ".coll");
+      SaveManager.save(selectCollection(collectionName), collectionName + ".coll");
     } finally {
       writeLock.unlock();
     }
     }
+    @Override
     public void commit() throws IOException {
     writeLock.lock();
     try {
@@ -102,7 +103,8 @@ public enum CollectionManager {
     }
     }
 
-    public void importCollection(File location) throws IOException, ClassNotFoundException {
+    @Override
+    public void importCollection(String collectionName, File location) throws IOException, ClassNotFoundException {
     writeLock.lock();
     try {
       jsonCollections.add(SaveManager.load(location));
@@ -111,7 +113,8 @@ public enum CollectionManager {
     }
     }
 
-    public List<JsonCollection> getJsonCollections() {
+    @Override
+    public List<DatabaseSchema> getJsonCollections() {
     readLock.lock();
     try {
       return jsonCollections;
@@ -120,8 +123,8 @@ public enum CollectionManager {
     }
     }
 
-
-    public JsonCollection getCurrentCollection() {
-         return currentCollection;
+    @Override
+    public void setJsonCollections(List<DatabaseSchema> jsonCollections) {
+        this.jsonCollections = jsonCollections;
     }
 }

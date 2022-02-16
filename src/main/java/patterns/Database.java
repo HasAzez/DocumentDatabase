@@ -1,4 +1,4 @@
-package facade;
+package patterns;
 
 import java.util.List;
 

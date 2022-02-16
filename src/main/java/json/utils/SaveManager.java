@@ -2,7 +2,6 @@ package json.utils;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
 
 public class SaveManager {
 
@@ -16,20 +15,23 @@ public class SaveManager {
             objectOutputStream.writeObject(object);
         }
     }
+
+    @SuppressWarnings("unchecked")
     public static <E> E load(File file) throws IOException, ClassNotFoundException {
         try(FileInputStream fileInputStream = new FileInputStream(file);
             ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
             return (E) objectInputStream.readObject();
         }
     }
-    public static ArrayList<String> receiveObject(Socket socket) {
-        ArrayList<String> dd = null;
+    @SuppressWarnings("unchecked")
+    public static <T extends Serializable> T receiveObject(Socket socket) {
+        T dd = null;
         try {
             InputStream inputStream = socket.getInputStream();
 
             ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
 
-            dd = (ArrayList<String>) objectInputStream.readObject();
+            dd = (T)objectInputStream.readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

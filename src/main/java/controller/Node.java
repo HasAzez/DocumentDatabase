@@ -20,7 +20,7 @@ public class Node {
         objectOutputStream = new ObjectOutputStream(outputStream);
     }
 
-    public <T extends Serializable>  void send(T object) throws IOException {
+    public <T extends Serializable> void send(T object) throws IOException {
 
         System.out.println("Sending object to the node " + socket.getPort());
         objectOutputStream.writeObject(object);

@@ -1,4 +1,4 @@
-package cache;
+package cache.data;
 
 public interface Cache<K, V> {
 
