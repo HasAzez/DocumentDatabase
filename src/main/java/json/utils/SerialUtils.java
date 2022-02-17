@@ -3,10 +3,10 @@ package json.utils;
 import java.io.*;
 import java.net.Socket;
 
-public class SaveManager {
+public class SerialUtils {
 
 
-    private SaveManager() {
+    private SerialUtils() {
     }
 
     public static <T extends Serializable> void save(T object, String name) throws IOException {
@@ -24,22 +24,22 @@ public class SaveManager {
         }
     }
     @SuppressWarnings("unchecked")
-    public static <T extends Serializable> T receiveObject(Socket socket) {
-        T dd = null;
+    public static <T> T receiveObject(Socket socket) {
+        T receivedObject = null;
         try {
             InputStream inputStream = socket.getInputStream();
 
             ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
 
-            dd = (T)objectInputStream.readObject();
+            receivedObject = (T)objectInputStream.readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
 
-        return dd;
+        return receivedObject;
     }
-    public static <T extends Serializable> void sendObject(T object, Socket socket) throws IOException {
+    public static <T> void sendObject(T object, Socket socket) throws IOException {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         System.out.println("Sending object to the node " + socket.getPort());
         objectOutputStream.writeObject(object);

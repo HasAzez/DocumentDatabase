@@ -1,13 +1,14 @@
 package controller;
 
 import cache.use.SingletonFIFOCache;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import json.utils.Instruction;
 import patterns.*;
 import index.CollectionManager;
 import index.HashMapIndex;
 import index.IndexBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
-import index.SchemaManager;
+import index.ICollectionManager;
 import json.utils.ListOperations;
 
 import java.io.File;
@@ -19,14 +20,14 @@ public class ControllerSession {
   private final DatabaseStrategy db;
   private String userRole;
   private final SingletonFIFOCache cache = SingletonFIFOCache.INSTANCE;
-  private final SchemaManager collectionManager = CollectionManager.INSTANCE;
+  private final ICollectionManager collectionManager = CollectionManager.INSTANCE;
   IndexBuilder indexBuilder = new HashMapIndex(new HashMap<>());
   private final ReadingPrivileges rp = new ReadingFacade(cache,collectionManager);
   private final Instruction instruction = new Instruction() ;
 
   public ControllerSession() throws IOException {
     WritingPrivileges wp = new WritingFacade(indexBuilder, cache,collectionManager);
-    db = new DatabaseStrategy();
+    db = new DatabaseStrategy(SingletonReadWriteLock.INSTANCE);
     setRole(db, rp, wp);
     defaultInstruction();
 
@@ -49,7 +50,8 @@ public class ControllerSession {
     File f = new File("database.db");
     if (!f.exists()) {
       System.out.println("please change your username and password");
-      db.createCollection("credentials", "credentials.json");
+      JsonNode schema = new ObjectMapper().readTree(new File("Schema\\credentials.json") );
+      db.createCollection("credentials", schema.toString());
       db.makeIndexOn("credentials","username");
       db.makeIndexOn("credentials","password");
       db.add("credentials"
@@ -66,20 +68,29 @@ public class ControllerSession {
 
   private Optional<Database> getOptionalDatabase() {
     if (userRole.equals("admin")) {
-      return Optional.of(db);
+      DatabaseStrategy adminPrivileges = getAdminPrivileges();
+      return Optional.of(adminPrivileges);
     } else if (userRole.equals("user")) {
-      DatabaseStrategy databaseStrategy = getUserPrivileges();
-      return Optional.of(databaseStrategy);
+      DatabaseStrategy userPrivileges = getUserPrivileges();
+      return Optional.of(userPrivileges);
     }
     return Optional.empty();
   }
 
   private DatabaseStrategy getUserPrivileges() {
     WritingPrivileges wp = new NoWritingPrivileges();
-    DatabaseStrategy databaseStrategy = new DatabaseStrategy();
+    DatabaseStrategy databaseStrategy = new DatabaseStrategy(SingletonReadWriteLock.INSTANCE);
     setRole(databaseStrategy, rp, wp);
     return databaseStrategy;
   }
+  private DatabaseStrategy getAdminPrivileges() {
+    IndexBuilder indexBuilder = new HashMapIndex(new HashMap<>());
+    WritingPrivileges wp = new WritingFacade(indexBuilder, cache,collectionManager);
+    DatabaseStrategy databaseStrategy = new DatabaseStrategy(SingletonReadWriteLock.INSTANCE);
+    setRole(databaseStrategy, rp, wp);
+    return databaseStrategy;
+  }
+
 
   private void firstTimeWipe(String username) throws IOException {
     if (username.equals("default")) {

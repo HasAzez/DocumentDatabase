@@ -1,8 +1,12 @@
 package patterns;
 
 import cache.use.SingletonCache;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import controller.BackgroundServer;
-import index.*;
+import index.DatabaseSchema;
+import index.IndexBuilder;
+import index.JsonCollection;
+import index.ICollectionManager;
 import json.utils.Instruction;
 import json.utils.JsonSchemaValidator;
 
@@ -12,19 +16,19 @@ import java.util.ArrayList;
 
 public class WritingFacade implements WritingPrivileges {
 
-  private final SchemaManager collectionManager;
+  private final ICollectionManager collectionManager;
   private final BackgroundServer backgroundServer = BackgroundServer.INSTANCE;
   private final IndexBuilder indexBuilder;
   private final SingletonCache cache;
 
-  public WritingFacade(IndexBuilder indexBuilder, SingletonCache cache,SchemaManager collectionManager) {
+  public WritingFacade(IndexBuilder indexBuilder, SingletonCache cache, ICollectionManager collectionManager) {
     this.cache = cache;
     this.collectionManager = collectionManager;
     this.indexBuilder = indexBuilder;
   }
   @Override
   public String createCollection(String collectionName, String jsonSchema) throws IOException {
-    DatabaseSchema jsonCollection = new JsonCollection(collectionName, jsonSchema, indexBuilder);
+    DatabaseSchema jsonCollection = new JsonCollection(collectionName,new ObjectMapper().readTree(jsonSchema), indexBuilder);
     boolean worked = collectionManager.addCollection(jsonCollection);
     commit();
     return worked ? "Collection created" : "Collection already exists";
@@ -59,9 +63,17 @@ public class WritingFacade implements WritingPrivileges {
   }
 
   @Override
-  public String update(Instruction instruction, String jsonString) {
+  public String update(Instruction instruction, String jsonString) throws IOException {
 
-    return "fail";
+   if (instruction.getPropertyName().equals("_id"))
+   { DatabaseSchema currentCollection =
+           collectionManager.selectCollection(instruction.getCollectionName());
+     cache.clear();
+     currentCollection.update(instruction.getValue(), jsonString);
+     commit();
+     return "Updated";
+   }
+   return "failed";
   }
 
   private void commit() throws IOException {

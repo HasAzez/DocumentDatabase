@@ -9,23 +9,19 @@ import org.apache.commons.codec.digest.DigestUtils;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class JsonCollection implements Serializable, DatabaseSchema {
 
   private final Map<String, JsonNode> uniqueIndexedMap;
   private final String name;
   private final ObjectMapper mapper;
-  private final String validator;
+  private final JsonNode validator;
   private final IndexBuilder indexBuilder;
-  private final ReentrantReadWriteLock reentrantReadWriteLock=new ReentrantReadWriteLock();
-  private final Lock readLock=reentrantReadWriteLock.readLock();
-  private final Lock writeLock=reentrantReadWriteLock.writeLock();
 
-  public JsonCollection(String name, String schemaFileLocation, IndexBuilder indexBuilder){
 
-    this.validator = schemaFileLocation;
+  public JsonCollection(String name, JsonNode schema, IndexBuilder indexBuilder){
+
+    this.validator = schema;
     mapper = new ObjectMapper();
     this.uniqueIndexedMap = new HashMap<>();
     this.name = name;
@@ -34,8 +30,7 @@ public class JsonCollection implements Serializable, DatabaseSchema {
 
   @Override
   public void insert(String jsonSentence) throws JsonProcessingException {
-    writeLock.lock();
-    try {
+
       JsonNode unWrappedJson = mapper.readTree(jsonSentence);
       if (!uniqueIndexedMap.containsKey(unWrappedJson.hashCode() + "")) {
         String wrapped = wrapID(jsonSentence);
@@ -45,9 +40,7 @@ public class JsonCollection implements Serializable, DatabaseSchema {
         if (!indexBuilder.getIndexedProperties().isEmpty())
           indexBuilder.addToAllIndexes(uniqueIndexedJson);
       }
-    } finally {
-      writeLock.unlock();
-    }
+
   }
 
   private String wrapID(String jsonSentence) throws JsonProcessingException {
@@ -58,8 +51,7 @@ public class JsonCollection implements Serializable, DatabaseSchema {
 
   @Override
   public void delete(String propertyName, String key) {
-    writeLock.lock();
-    try {
+
       if (propertyName.equals("_id")) {
         indexBuilder.deleteFromIndexed(uniqueIndexedMap.get(key), key);
         uniqueIndexedMap.remove(key);
@@ -69,9 +61,7 @@ public class JsonCollection implements Serializable, DatabaseSchema {
       } else {
         deleteFromNonIndexed(propertyName, key);
       }
-    } finally {
-      writeLock.unlock();
-    }
+
   }
 
   private void deleteFromNonIndexed(String propertyName, String key) {
@@ -81,19 +71,15 @@ public class JsonCollection implements Serializable, DatabaseSchema {
 
   @Override
   public List<JsonNode> getAll() {
-    readLock.lock();
-    try {
+
       Collection<JsonNode> values = uniqueIndexedMap.values();
       return new ArrayList<>(values);
-    } finally {
-      readLock.unlock();
-    }
+
   }
 
   @Override
   public void update(String id, String jsonSentence) throws JsonProcessingException {
-    writeLock.lock();
-    try {
+
       JsonNode oldJson = getDocument(id);
       if (uniqueIndexedMap.containsKey(id)) {
         String wrapped = wrapIDWithDesiredID(jsonSentence, id);
@@ -104,9 +90,7 @@ public class JsonCollection implements Serializable, DatabaseSchema {
           indexBuilder.addToAllIndexes(uniqueIndexedJson);
         }
       }
-    } finally {
-      writeLock.unlock();
-    }
+
   }
 
   private String wrapIDWithDesiredID(String jsonSentence, String id) {
@@ -117,8 +101,7 @@ public class JsonCollection implements Serializable, DatabaseSchema {
 
   @Override
   public List<JsonNode> get(String propertyName, String searched) {
-    readLock.lock();
-    try {
+
       List<JsonNode> jsonNodes = new ArrayList<>();
       if (propertyName.equals("_id")) {
         jsonNodes.add(getDocument(searched));
@@ -129,9 +112,7 @@ public class JsonCollection implements Serializable, DatabaseSchema {
       }
 
       return jsonNodes;
-    } finally {
-      readLock.unlock();
-    }
+
   }
   private JsonNode getDocument(String id) {
     return uniqueIndexedMap.get(id);
@@ -147,12 +128,9 @@ public class JsonCollection implements Serializable, DatabaseSchema {
 
   @Override
   public void makeIndexOn(String propertyName) {
-    writeLock.lock();
-    try {
+
       indexBuilder.makeIndexOn(propertyName, uniqueIndexedMap.values());
-    } finally {
-      writeLock.unlock();
-    }
+
   }
 
   @Override

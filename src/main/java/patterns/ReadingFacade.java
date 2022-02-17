@@ -3,17 +3,17 @@ package patterns;
 import cache.use.SingletonCache;
 import com.fasterxml.jackson.databind.JsonNode;
 import index.DatabaseSchema;
-import index.SchemaManager;
+import index.ICollectionManager;
 import json.utils.Instruction;
 
 import java.util.List;
 
 public class ReadingFacade implements ReadingPrivileges {
 
-  private final SchemaManager collectionManager;
+  private final ICollectionManager collectionManager;
   private final SingletonCache cache;
 
-  public ReadingFacade(SingletonCache cache,SchemaManager collectionManager) {
+  public ReadingFacade(SingletonCache cache, ICollectionManager collectionManager) {
     this.collectionManager = collectionManager;
     this.cache = cache;
   }

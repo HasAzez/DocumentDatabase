@@ -7,56 +7,109 @@ import json.utils.Instruction;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
 
 public class DatabaseStrategy implements Database {
   private ReadingPrivileges readingPrivileges;
   private WritingPrivileges writingPrivileges;
+  private final Lock writeLock;
+  private final Lock readLock;
+
+  public DatabaseStrategy(SingletonReadWriteLock singletonReadWriteLock) {
+    this.writeLock = singletonReadWriteLock.getWriteLock();
+    this.readLock = singletonReadWriteLock.getReadLock();
+  }
 
   @Override
   public String dumpCollection(String collectionName) throws IOException {
 
-    return writingPrivileges.dumpCollection(collectionName);
+    writeLock.lock();
+    try {
+      return writingPrivileges.dumpCollection(collectionName);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   @Override
   public String importCollection(String collectionName, File file)
       throws IOException, ClassNotFoundException {
-    return writingPrivileges.importCollection(collectionName, file);
+    writeLock.lock();
+    try {
+      return writingPrivileges.importCollection(collectionName, file);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   @Override
   public String makeIndexOn(String collectionName, String propertyName) {
-    return writingPrivileges.makeIndexOn(collectionName, propertyName);
+    writeLock.lock();
+    try {
+      return writingPrivileges.makeIndexOn(collectionName, propertyName);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   @Override
   public String createCollection(String collectionName, String jsonSchema) throws IOException {
-    return writingPrivileges.createCollection(collectionName, jsonSchema);
+    writeLock.lock();
+    try {
+      return writingPrivileges.createCollection(collectionName, jsonSchema);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   @Override
   public String deleteCollection(String collectionName) throws IOException {
-    return writingPrivileges.deleteCollection(collectionName);
+    writeLock.lock();
+    try {
+      return writingPrivileges.deleteCollection(collectionName);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   @Override
   public String add(String collectionName, String jsonString) throws IOException {
-    return writingPrivileges.add(collectionName, jsonString);
+    writeLock.lock();
+    try {
+      return writingPrivileges.add(collectionName, jsonString);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   @Override
   public String delete(Instruction instruction) throws IOException {
-    return writingPrivileges.delete(instruction);
+    writeLock.lock();
+    try {
+      return writingPrivileges.delete(instruction);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   @Override
   public List<JsonNode> find(Instruction instruction) {
-    return readingPrivileges.find(instruction);
+    readLock.lock();
+    try {
+      return readingPrivileges.find(instruction);
+    } finally {
+      readLock.unlock();
+    }
   }
 
   @Override
   public List<JsonNode> findAll(String collectionName) {
-    return readingPrivileges.findAll(collectionName);
+    readLock.lock();
+    try {
+      return readingPrivileges.findAll(collectionName);
+    } finally {
+      readLock.unlock();
+    }
   }
 
   @Override
@@ -66,7 +119,12 @@ public class DatabaseStrategy implements Database {
 
   @Override
   public List<String> showCollections() {
-    return readingPrivileges.showCollections();
+    readLock.lock();
+    try {
+      return readingPrivileges.showCollections();
+    } finally {
+      readLock.unlock();
+    }
   }
 
   public void setReadingPrivileges(ReadingPrivileges readingPrivileges) {

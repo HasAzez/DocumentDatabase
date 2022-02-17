@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface SchemaManager {
+public interface ICollectionManager {
     void deleteCollection(String name);
 
     DatabaseSchema selectCollection(String name);

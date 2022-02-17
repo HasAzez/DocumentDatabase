@@ -9,11 +9,9 @@ public abstract class IndexBuilder implements Serializable {
 
   protected final Map<String, Map<String, List<JsonNode>>> indexes;
 
-  public IndexBuilder(Map<String, Map<String, List<JsonNode>>> indexes){
-
+  public IndexBuilder(Map<String, Map<String, List<JsonNode>>> indexes) {
     this.indexes = indexes;
   }
-
 
   public abstract void makeIndexOn(String property, Collection<JsonNode> values);
 
@@ -25,7 +23,6 @@ public abstract class IndexBuilder implements Serializable {
 
   protected void addToAllIndexes(JsonNode jsonNode) {
     for (String property : getIndexedProperties()) {
-      if (!getIndex(property).isEmpty())
       addToIndexedMap(property, jsonNode);
     }
   }
@@ -56,5 +53,4 @@ public abstract class IndexBuilder implements Serializable {
 
     return indexes.get(property);
   }
-
 }

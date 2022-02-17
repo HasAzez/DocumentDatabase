@@ -37,8 +37,8 @@ public enum BackgroundServer {
 
     public <T extends Serializable> void broadcast(T object) throws IOException {
 
-        for (Node listener : users) {
-            listener.send(object);
+        for (Node user : users) {
+            user.send(object);
         }
     }
 
